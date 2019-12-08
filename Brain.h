@@ -45,7 +45,6 @@ class Brain {
         uint8_t checksum;
         uint8_t checksumAccumulator;
         uint8_t eegPowerLength;
-        boolean hasPower;
         void clearPacket();
         void clearEegPower();
         boolean parsePacket();

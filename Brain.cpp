@@ -17,7 +17,6 @@ void Brain::init() {
     packetIndex = 0;
     packetLength = 0;
     eegPowerLength = 0;
-    hasPower = false;
     checksum = 0;
     checksumAccumulator = 0;
 
@@ -74,7 +73,7 @@ boolean Brain::update() {
                     }
                     else {
                         // Parsing failed, send an error.
-                        sprintf(latestError, "ERROR: Could not parse");
+                       // sprintf(latestError, "ERROR: Could not parse");
                         // good place to print the packet if debugging
                     }
                 }
@@ -131,7 +130,6 @@ boolean Brain::parsePacket() {
     // Loop through the packet, extracting data.
     // Based on mindset_communications_protocol.pdf from the Neurosky Mindset SDK.
     // Returns true if passing succeeds
-    hasPower = false;
     boolean parseSuccess = true;
     // int rawValue = 0;
 
@@ -163,15 +161,16 @@ boolean Brain::parsePacket() {
                     eegPower[j] = ((uint32_t)a << 16) | ((uint32_t)b << 8) | (uint32_t)c;
                 }
 
-                hasPower = true;
-                // This seems to happen once during start-up on the force trainer. Strange. Wise to wait a couple of packets before
-                // you start reading.
                 break;
             case 0x80:
                 // We dont' use this value so let's skip it and just increment i
                 // uint8_t packetLength = packetData[++i];
                 // rawValue = ((int)packetData[++i] << 8) | packetData[++i];
                 i += 3;
+                // HACK I (dmo) know that raw values are sent in packets that
+                // are just the raw value
+                // yeet them into the ether
+                parseSuccess = false;
                 break;
             default:
                 // Broken packet ?
@@ -197,12 +196,9 @@ void Brain::printCSV() {
     brainStream->print(attention, DEC);
     brainStream->print(",");
     brainStream->print(meditation, DEC);
-
-    if (hasPower) {
-        for(int i = 0; i < EEG_POWER_BANDS; i++) {
-            brainStream->print(",");
-            brainStream->print(eegPower[i], DEC);
-        }
+    for(int i = 0; i < EEG_POWER_BANDS; i++) {
+        brainStream->print(",");
+        brainStream->print(eegPower[i], DEC);
     }
 
     brainStream->println("");
@@ -217,8 +213,6 @@ char* Brain::readCSV() {
     // find out how big this really needs to be
     // should be popped off the stack once it goes out of scope?
     // make the character array as small as possible
-
-    if(hasPower) {
 
         sprintf(csvBuffer,"%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu",
             signalQuality,
@@ -235,16 +229,6 @@ char* Brain::readCSV() {
         );
 
         return csvBuffer;
-    }
-    else {
-        sprintf(csvBuffer,"%d,%d,%d",
-            signalQuality,
-            attention,
-            meditation
-        );
-
-        return csvBuffer;
-    }
 }
 
 // For debugging, print the entire contents of the packet data array.
@@ -270,7 +254,7 @@ void Brain::printDebug() {
     brainStream->print("Meditation: ");
     brainStream->println(meditation, DEC);
 
-    if (hasPower) {
+   
         brainStream->println("");
         brainStream->println("EEG POWER:");
         brainStream->print("Delta: ");
@@ -289,7 +273,6 @@ void Brain::printDebug() {
         brainStream->println(eegPower[6], DEC);
         brainStream->print("Mid Gamma: ");
         brainStream->println(eegPower[7], DEC);
-    }
 
     brainStream->println("");
     brainStream->print("Checksum Calculated: ");
