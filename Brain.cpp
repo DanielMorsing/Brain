@@ -23,6 +23,7 @@ void Brain::init() {
     signalQuality = 200;
     attention = 0;
     meditation = 0;
+    rawMotor = 0xffff;
 
     clearEegPower();
 }
@@ -134,6 +135,9 @@ boolean Brain::parsePacket() {
     // int rawValue = 0;
 
     clearEegPower();    // clear the eeg power to make sure we're honest about missing values
+    // HACK, if we receive any packets that aren't motor packets, clear
+    // the rawMotor value
+    rawMotor = 0xffff;
 
     for (uint8_t i = 0; i < packetLength; i++) {
         switch (packetData[i]) {
@@ -146,7 +150,21 @@ boolean Brain::parsePacket() {
             case 0x5:
                 meditation = packetData[++i];
                 break;
-            case 0x83:
+
+		// THIS IS A HACK FROM DANIELLAND
+		// This is a command that isn't defined in any neurosky
+		// device. It exists because I wanted to use an external
+		// device that communicated over serial, but didn't
+		// want to make the protocol have multiple modes
+		// Yes, I know this ties me into using this protocol
+		// in the future for anything that I want to control
+		// the boxy doxy. I don't care
+		// https://twitter.com/dril/status/972534838057230336
+            case 0x8:
+                rawMotor = packetData[++i];
+                break;
+
+	    case 0x83:
                 // ASIC_EEG_POWER: eight big-endian 3-uint8_t unsigned integer values representing delta, theta, low-alpha high-alpha, low-beta, high-beta, low-gamma, and mid-gamma EEG band power values
                 // The next uint8_t sets the length, usually 24 (Eight 24-bit numbers... big endian?)
                 // We dont' use this value so let's skip it and just increment i
@@ -290,6 +308,10 @@ uint8_t Brain::readSignalQuality() {
 
 uint8_t Brain::readAttention() {
     return attention;
+}
+
+uint16_t Brain::readRawMotor() {
+    return rawMotor;
 }
 
 uint8_t Brain::readMeditation() {

@@ -34,6 +34,9 @@ class Brain {
         uint32_t readLowGamma();
         uint32_t readMidGamma();
 
+
+	uint16_t readRawMotor();
+
     private:
         Stream* brainStream;
         uint8_t packetData[MAX_PACKET_LENGTH];
@@ -71,6 +74,8 @@ class Brain {
         uint8_t signalQuality;
         uint8_t attention;
         uint8_t meditation;
+
+	uint16_t rawMotor;
 
         boolean freshPacket;
 
